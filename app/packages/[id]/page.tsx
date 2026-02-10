@@ -32,6 +32,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { useToastContext } from "@/lib/toast-context"
@@ -91,6 +98,16 @@ export default function PackageDetailPage({
   const { showToast } = useToastContext()
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
+  
+  // State for item customizations
+  const [customizations, setCustomizations] = useState<Record<number, string>>({})
+
+  const handleCustomizationChange = (index: number, value: string) => {
+    setCustomizations(prev => ({
+      ...prev,
+      [index]: value
+    }))
+  }
 
   const inWishlist = isInWishlist(puja.id)
   const discount = Math.round(
@@ -101,15 +118,32 @@ export default function PackageDetailPage({
   const images = [puja.image, puja.image, puja.image]
 
   const handleAddToCart = () => {
+    // Convert index-based customizations to name-based
+    const customizationMap: Record<string, string> = {}
+    if (Object.keys(customizations).length > 0) {
+      Object.entries(customizations).forEach(([indexStr, value]) => {
+        const idx = parseInt(indexStr)
+        if (puja.items[idx]) {
+           customizationMap[puja.items[idx].name] = value
+        }
+      })
+    }
+    
+    // Create unique ID for cart if customizations exist
+    const cartItemId = Object.keys(customizationMap).length > 0 
+      ? `${puja.id}-${Object.values(customizationMap).join("-")}`
+      : puja.id
+
     for (let i = 0; i < quantity; i++) {
       addToCart({
-        id: puja.id,
+        id: cartItemId,
         name: puja.name,
         nameHindi: puja.nameHindi,
         price: puja.price,
         originalPrice: puja.originalPrice,
         image: puja.image,
         itemCount: puja.itemCount,
+        selectedOptions: Object.keys(customizationMap).length > 0 ? customizationMap : undefined
       })
     }
     showToast(`${quantity} x ${puja.name} added to cart!`, "success")
@@ -484,16 +518,50 @@ export default function PackageDetailPage({
                 <CardTitle>
                   Items Included in This Package ({puja.itemCount} items)
                 </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Customize quantities and options below as per your requirement.
+                </p>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {puja.items.map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 p-3 bg-secondary/50 rounded-lg"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-secondary/50 rounded-lg border border-transparent hover:border-primary/20 transition-colors gap-2 sm:gap-4"
                     >
-                      <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-sm">{item}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-background flex items-center justify-center shrink-0">
+                          <Check className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{item.name}</div>
+                          {item.quantity && !item.options && (
+                            <div className="text-xs text-muted-foreground">
+                              Qty: {item.quantity}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {item.options ? (
+                         <div className="w-full sm:w-32 pl-11 sm:pl-0">
+                           <Select
+                             value={customizations[index] || item.quantity || item.options[0]}
+                             onValueChange={(val) => handleCustomizationChange(index, val)}
+                           >
+                             <SelectTrigger className="h-8 text-xs w-full">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               {item.options.map(opt => (
+                                 <SelectItem key={opt} value={opt} className="text-xs">
+                                   {opt}
+                                 </SelectItem>
+                               ))}
+                             </SelectContent>
+                           </Select>
+                         </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>

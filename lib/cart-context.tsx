@@ -11,6 +11,7 @@ export interface CartItem {
   quantity: number
   image: string
   itemCount: number
+  selectedOptions?: Record<string, string>
 }
 
 // Valid coupon codes for demo

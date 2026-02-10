@@ -100,6 +100,24 @@ export function PujaCard({ puja }: PujaCardProps) {
               {puja.description}
             </p>
 
+            {/* Items Preview */}
+            <div className="text-xs text-muted-foreground bg-secondary/30 p-2 rounded-md">
+              <span className="font-medium text-foreground block mb-1">Includes:</span>
+              <ul className="space-y-0.5">
+                {puja.items.slice(0, 3).map((item, i) => (
+                  <li key={i} className="flex items-center gap-1.5 overflow-hidden">
+                    <span className="w-1 h-1 rounded-full bg-primary shrink-0" />
+                    <span className="truncate">{item.name}</span>
+                  </li>
+                ))}
+              </ul>
+              {puja.items.length > 3 && (
+                <p className="mt-1 pl-2.5 text-[10px] text-primary font-medium">
+                  +{puja.items.length - 3} more items
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Package className="h-4 w-4" />
